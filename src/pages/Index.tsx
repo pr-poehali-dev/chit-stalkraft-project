@@ -4,9 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Icon from '@/components/ui/icon';
+import Cart from '@/components/Cart';
+import CheckoutModal from '@/components/CheckoutModal';
+import { toast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [cartItems, setCartItems] = useState<Array<{id: number; name: string; price: string; cryptoPrice: string}>>([]);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const categories = [
     { id: 'all', name: 'Все' },
@@ -117,6 +122,43 @@ const Index = () => {
     ? cheats 
     : cheats.filter(cheat => cheat.category === selectedCategory);
 
+  const addToCart = (cheat: typeof cheats[0]) => {
+    if (cartItems.find(item => item.id === cheat.id)) {
+      toast({
+        title: 'Уже в корзине',
+        description: `${cheat.name} уже добавлен в корзину`,
+        variant: 'destructive'
+      });
+      return;
+    }
+    setCartItems([...cartItems, {
+      id: cheat.id,
+      name: cheat.name,
+      price: cheat.price,
+      cryptoPrice: cheat.cryptoPrice
+    }]);
+    toast({
+      title: 'Добавлено в корзину',
+      description: `${cheat.name} добавлен в корзину`
+    });
+  };
+
+  const removeFromCart = (id: number) => {
+    setCartItems(cartItems.filter(item => item.id !== id));
+    toast({
+      title: 'Удалено',
+      description: 'Товар удален из корзины'
+    });
+  };
+
+  const handleCheckout = () => {
+    setCheckoutOpen(true);
+  };
+
+  const cartTotal = cartItems.reduce((sum, item) => {
+    return sum + parseInt(item.price.replace(/[^0-9]/g, ''));
+  }, 0);
+
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b border-border sticky top-0 bg-background/80 backdrop-blur-lg z-50">
@@ -131,10 +173,7 @@ const Index = () => {
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
             <a href="#contacts" className="hover:text-primary transition-colors">Контакты</a>
           </div>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Icon name="ShoppingCart" size={18} className="mr-2" />
-            Корзина
-          </Button>
+          <Cart items={cartItems} onRemove={removeFromCart} onCheckout={handleCheckout} />
         </div>
       </nav>
 
@@ -231,9 +270,12 @@ const Index = () => {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 group-hover:scale-105 transition-transform">
+                <Button 
+                  onClick={() => addToCart(cheat)}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 group-hover:scale-105 transition-transform"
+                >
                   <Icon name="ShoppingCart" size={18} className="mr-2" />
-                  Купить сейчас
+                  В корзину
                 </Button>
               </CardContent>
             </Card>
@@ -325,6 +367,8 @@ const Index = () => {
           <p className="text-sm">Использование читов запрещено правилами игры. Вы используете их на свой риск.</p>
         </div>
       </footer>
+
+      <CheckoutModal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} total={cartTotal} />
     </div>
   );
 };
